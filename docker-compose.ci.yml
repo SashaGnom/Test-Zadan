@@ -1,0 +1,18 @@
+services:
+  webhook-test:
+    image: python:3.12-alpine
+    command: ["python", "-u", "/receiver.py"]
+    volumes:
+      - ./tests/webhook_receiver.py:/receiver.py:ro
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health')"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 2s
+  consumer:
+    depends_on:
+      webhook-test:
+        condition: service_healthy
