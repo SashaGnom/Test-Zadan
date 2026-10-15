@@ -17,7 +17,6 @@ from app.schemas import PaymentAccepted, PaymentCreate, PaymentDetails, PaymentS
 from app.security import require_api_key
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     stop_event = asyncio.Event()
@@ -90,18 +89,24 @@ async def create_payment(
         next_attempt_at=now,
         created_at=now,
     )
-    session.add_all([payment, event])
+
+    session.add(payment)
     try:
+        await session.flush()
+        session.add(event)
         await session.commit()
-    except IntegrityError as exc:
+    except IntegrityError:
         await session.rollback()
         existing = await session.scalar(select(Payment).where(Payment.idempotency_key == key))
-        if existing is None:
-            raise HTTPException(status_code=409, detail="Payment could not be created") from exc
-        if existing.request_hash != fingerprint:
-            raise HTTPException(status_code=409, detail="Idempotency-Key was already used with a different request") from exc
-        response.headers["Idempotency-Replayed"] = "true"
-        return PaymentAccepted(payment_id=existing.id, status=PaymentStatus(existing.status), created_at=existing.created_at)
+        if existing is not None:
+            if existing.request_hash != fingerprint:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency-Key was already used with a different request",
+                )
+            response.headers["Idempotency-Replayed"] = "true"
+            return PaymentAccepted(payment_id=existing.id, status=PaymentStatus(existing.status), created_at=existing.created_at)
+        raise
 
     return PaymentAccepted(payment_id=payment.id, status=PaymentStatus(payment.status), created_at=payment.created_at)
 

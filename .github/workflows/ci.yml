@@ -11,12 +11,12 @@ permissions:
 jobs:
   tests:
     name: Python tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -30,7 +30,7 @@ jobs:
 
   integration:
     name: Docker integration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: tests
     env:
       API_KEY: ci-test-key-not-for-production
@@ -41,7 +41,11 @@ jobs:
       RABBITMQ_PASSWORD: payments
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - name: Validate Compose configuration
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml config --quiet
       - name: Build and start services

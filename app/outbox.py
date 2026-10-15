@@ -46,13 +46,13 @@ async def _publish_one(event_id: UUID, broker: RabbitBroker) -> None:
             if event is None:
                 return
             try:
-                confirmed = await broker.publish(
+                result = await broker.publish(
                     event.payload,
                     queue=RabbitQueue(settings.payments_queue, durable=True),
                     persist=True,
                     message_id=str(event.id),
                 )
-                if confirmed is False:
+                if result is False:
                     raise RuntimeError("RabbitMQ did not confirm the message")
             except Exception as exc:
                 event.attempt_count += 1

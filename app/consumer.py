@@ -24,9 +24,8 @@ payments_queue = RabbitQueue(settings.payments_queue, durable=True)
 dead_letter_queue = RabbitQueue(settings.payments_dlq, durable=True)
 
 
-@app.on_startup
+@app.after_startup
 async def declare_dead_letter_queue() -> None:
-    await broker.connect()
     await broker.declare_queue(dead_letter_queue)
 
 
@@ -42,9 +41,7 @@ async def process_payment(payment_id: UUID) -> None:
 
     async with SessionLocal() as session:
         async with session.begin():
-            payment = await session.scalar(
-                select(Payment).where(Payment.id == payment_id).with_for_update()
-            )
+            payment = await session.scalar(select(Payment).where(Payment.id == payment_id).with_for_update())
             if payment is None:
                 raise ValueError(f"Payment {payment_id} does not exist")
             if payment.status == PaymentStatus.PENDING.value:

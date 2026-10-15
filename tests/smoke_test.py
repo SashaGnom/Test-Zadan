@@ -61,11 +61,8 @@ def wait_for_api() -> None:
 
 def create_payment(payload: dict, key: str) -> dict:
     status, _, body = request_json(
-        f"{API_BASE_URL}/api/v1/payments",
-        method="POST",
-        payload=payload,
-        api_key=API_KEY,
-        idempotency_key=key,
+        f"{API_BASE_URL}/api/v1/payments", method="POST", payload=payload,
+        api_key=API_KEY, idempotency_key=key,
     )
     assert status == 202 and isinstance(body, dict), f"Payment creation failed: {status} {body}"
     return body
@@ -154,11 +151,8 @@ def main() -> None:
     assert body["status"] == "pending", f"Unexpected initial status: {body}"
 
     replay_status, replay_headers, replay_body = request_json(
-        f"{API_BASE_URL}/api/v1/payments",
-        method="POST",
-        payload=payload,
-        api_key=API_KEY,
-        idempotency_key=key,
+        f"{API_BASE_URL}/api/v1/payments", method="POST", payload=payload,
+        api_key=API_KEY, idempotency_key=key,
     )
     assert replay_status == 202 and isinstance(replay_body, dict), f"Idempotent replay failed: {replay_status} {replay_body}"
     assert replay_body["payment_id"] == payment_id, "Idempotency key created a duplicate payment"
@@ -166,11 +160,8 @@ def main() -> None:
 
     altered_payload = {**payload, "description": "A different request"}
     conflict_status, _, _ = request_json(
-        f"{API_BASE_URL}/api/v1/payments",
-        method="POST",
-        payload=altered_payload,
-        api_key=API_KEY,
-        idempotency_key=key,
+        f"{API_BASE_URL}/api/v1/payments", method="POST", payload=altered_payload,
+        api_key=API_KEY, idempotency_key=key,
     )
     assert conflict_status == 409, f"Expected 409 for a reused key with a different payload, got {conflict_status}"
 
